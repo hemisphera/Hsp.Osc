@@ -35,3 +35,4 @@ stages:
   - template: 'Templates/jobs/deploy-nuget.yml@DotNetBuilder'
     parameters:
       feedApiKey: $(NUGET_API_KEY)
+      authenticateFeeds: 'NuGet'
