@@ -19,7 +19,7 @@ resources:
     endpoint: github.com_hemisphera
 
 trigger:
-- master
+- main
 
 stages:
 
