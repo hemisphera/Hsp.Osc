@@ -7,7 +7,7 @@ variables:
   value: '$[counter(format(''{0}.{1}'', variables[''VersionPart_Major''], variables[''VersionPart_Minor'']), 0)]'
 - group: Build
 - name: Build_Version
-  value: '$[format(''{0}.{1}.{2}'', variables[''VersionPart_Major''], variables[''VersionPart_Minor''], variables[''VersionPart_Build''])]-beta1'
+  value: '$[format(''{0}.{1}.{2}-beta1'', variables[''VersionPart_Major''], variables[''VersionPart_Minor''], variables[''VersionPart_Build''])]'
 
 name: v$(Build_Version)
 
