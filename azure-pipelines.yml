@@ -33,3 +33,5 @@ stages:
   dependsOn: Build
   jobs:
   - template: 'Templates/jobs/deploy-nuget.yml@DotNetBuilder'
+    parameters:
+      feedApiKey: $(NUGET_API_KEY)
