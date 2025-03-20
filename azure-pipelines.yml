@@ -16,6 +16,7 @@ resources:
   - repository: DotNetBuilder
     type: github
     name: hemisphera/DotNetBuilder
+    endpoint: github.com_hemisphera
 
 trigger:
 - master
