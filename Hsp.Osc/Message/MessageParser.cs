@@ -7,6 +7,8 @@ namespace Hsp.Osc;
 
 public class MessageParser
 {
+  public static Encoding StringEncoding { get; set; } = Encoding.UTF8;
+
   public bool TryParseBundle(byte[] data, out Message[] messages)
   {
     messages = [];
@@ -265,7 +267,7 @@ public class MessageParser
       startPos += 4;
     } while (data[startPos - 1] != 0);
 
-    return Encoding.ASCII.GetString(ms.ToArray()).TrimEnd('\0');
+    return StringEncoding.GetString(ms.ToArray()).TrimEnd('\0');
   }
 
   private static byte[] ParseBlob(byte[] data, int startPos, ref int incrementBy)
