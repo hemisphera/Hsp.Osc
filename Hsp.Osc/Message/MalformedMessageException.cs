@@ -9,7 +9,7 @@ public class MalformedMessageException : InvalidOperationException
   public string? Address { get; }
 
 
-  public MalformedMessageException(string message, byte[] data, string address = null)
+  public MalformedMessageException(string message, byte[] data, string? address = null)
     : base(message)
   {
     MessageData = data;
