@@ -58,17 +58,6 @@ public class MessageParser
     }
   }
 
-  public byte[] Parse(Message message)
-  {
-    var builder = new List<byte>();
-
-    SerializeAddress(message, builder);
-    SerializeTypeTags(message, builder);
-    SerializeMessageData(message, builder);
-
-    return builder.ToArray();
-  }
-
   private static int ParseAddress(byte[] data, out string address, int startIndex)
   {
     var addressBuilder = new StringBuilder();
@@ -187,6 +176,7 @@ public class MessageParser
         case TypeTag.OscString:
           var stringVal = ParseString(data, byteIndex);
           msg.PushAtom(stringVal);
+          incrementBy = (StringEncoding.GetByteCount(stringVal) + 4) / 4 * 4;
           break;
 
         case TypeTag.OscBlob:
@@ -293,96 +283,5 @@ public class MessageParser
     var blob = new byte[length];
     Array.Copy(data, startPos, blob, 0, length);
     return blob;
-  }
-
-  private static void SerializeAddress(Message message, List<byte> builder)
-  {
-    var count = message.Address.Length;
-    builder.AddRange(Encoding.ASCII.GetBytes(message.Address));
-
-    builder.Add(byte.MinValue);
-    count++;
-
-    while (count++ % 4 != 0) builder.Add(byte.MinValue);
-  }
-
-  private static void SerializeTypeTags(Message message, List<byte> builder)
-  {
-    var count = 0;
-
-    builder.Add((byte)',');
-    count++;
-
-    foreach (var typetag in message.TypeTags)
-    {
-      builder.Add((byte)typetag);
-      count++;
-    }
-
-    builder.Add(byte.MinValue);
-    count++;
-
-    while (count++ % 4 != 0) builder.Add(byte.MinValue);
-  }
-
-  private void SerializeMessageData(Message message, List<byte> builder)
-  {
-    foreach (var atom in message)
-    {
-      var type = atom.TypeTag;
-
-      switch (type)
-      {
-        case TypeTag.OscInt32:
-          SerializeInt32(atom.Int32Value, builder);
-          break;
-
-        case TypeTag.OscFloat32:
-          SerializeFloat32(atom.Float32Value, builder);
-          break;
-
-        case TypeTag.OscString:
-          SerializeString(atom.StringValue, builder);
-          break;
-
-        case TypeTag.OscBlob:
-          SerializeBlob(atom.BlobValue, builder);
-          break;
-      }
-    }
-  }
-
-  private static void SerializeInt32(int value, List<byte> builder)
-  {
-    var bytes = BitConverter.GetBytes(value);
-
-    if (BitConverter.IsLittleEndian) Array.Reverse(bytes);
-
-    builder.AddRange(bytes);
-  }
-
-  private static void SerializeFloat32(float value, List<byte> builder)
-  {
-    var bytes = BitConverter.GetBytes(value);
-
-    if (BitConverter.IsLittleEndian) Array.Reverse(bytes);
-
-    builder.AddRange(bytes);
-  }
-
-  private static void SerializeString(string? value, List<byte> builder)
-  {
-    SerializeBlob(Encoding.ASCII.GetBytes(value ?? string.Empty), builder);
-  }
-
-  private static void SerializeBlob(byte[]? value, List<byte> builder)
-  {
-    SerializeInt32(value?.Length ?? 0, builder);
-
-    builder.AddRange(value ?? []);
-    builder.Add(byte.MinValue);
-
-    var temp = value?.Length ?? 0 + 1;
-    while (temp++ % 4 != 0) builder.Add(byte.MinValue);
   }
 }

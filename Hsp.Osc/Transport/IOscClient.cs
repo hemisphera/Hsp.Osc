@@ -9,5 +9,5 @@ public interface IOscClient : IDisposable
 
   Task DisconnectAsync();
 
-  Task SendMessageAsync(Message message);
+  Task SendMessageAsync(IMessage message);
 }

@@ -7,8 +7,6 @@ namespace Hsp.Osc;
 
 public sealed class OscUdpClient : IOscClient
 {
-  private static readonly MessageParser DefaultMessageParser = new();
-
   private UdpClient? _client;
 
   public IPAddress Address { get; }
@@ -22,7 +20,7 @@ public sealed class OscUdpClient : IOscClient
 
 
   public OscUdpClient(IPAddress address, int port)
-    : this(port, address, port)
+    : this(port + 1, address, port)
   {
   }
 
@@ -52,10 +50,10 @@ public sealed class OscUdpClient : IOscClient
     await Task.CompletedTask;
   }
 
-  public async Task SendMessageAsync(Message message)
+  public async Task SendMessageAsync(IMessage message)
   {
     if (_client == null) throw new Exception("Client not connected.");
-    var bytes = DefaultMessageParser.Parse(message);
+    var bytes = message.ToBytes();
     await _client.SendAsync(bytes);
   }
 

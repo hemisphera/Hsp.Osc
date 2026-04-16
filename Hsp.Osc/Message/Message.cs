@@ -1,10 +1,13 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Hsp.Osc;
 
-public sealed class Message : IEnumerable<Atom>
+public sealed class Message : IEnumerable<Atom>, IMessage
 {
   public string Address { get; }
   public TypeTag[] TypeTags => Atoms.Select(a => a.TypeTag).ToArray();
@@ -75,6 +78,11 @@ public sealed class Message : IEnumerable<Atom>
     return this;
   }
 
+  public Message PushAtom(double value)
+  {
+    return PushAtom((float)value);
+  }
+
   public Message PushAtom(float value)
   {
     Atoms.Add(new Atom(value));
@@ -85,6 +93,95 @@ public sealed class Message : IEnumerable<Atom>
   {
     Atoms.AddRange(atoms);
     return this;
+  }
+
+  public byte[] ToBytes()
+  {
+    var builder = new List<byte>();
+    SerializeAddress(this, builder);
+    SerializeTypeTags(this, builder);
+    SerializeMessageData(this, builder);
+    return builder.ToArray();
+  }
+
+  private static void SerializeAddress(Message message, List<byte> builder)
+  {
+    var count = message.Address.Length;
+    builder.AddRange(Encoding.ASCII.GetBytes(message.Address));
+    builder.Add(byte.MinValue);
+    count++;
+    while (count++ % 4 != 0) builder.Add(byte.MinValue);
+  }
+
+  private static void SerializeTypeTags(Message message, List<byte> builder)
+  {
+    var count = 0;
+    builder.Add((byte)',');
+    count++;
+    foreach (var typetag in message.TypeTags)
+    {
+      builder.Add((byte)typetag);
+      count++;
+    }
+
+    builder.Add(byte.MinValue);
+    count++;
+    while (count++ % 4 != 0) builder.Add(byte.MinValue);
+  }
+
+  private static void SerializeMessageData(Message message, List<byte> builder)
+  {
+    foreach (var atom in message)
+    {
+      switch (atom.TypeTag)
+      {
+        case TypeTag.OscInt32:
+          SerializeInt32(atom.Int32Value, builder);
+          break;
+        case TypeTag.OscFloat32:
+          SerializeFloat32(atom.Float32Value, builder);
+          break;
+        case TypeTag.OscString:
+          SerializeString(atom.StringValue, builder);
+          break;
+        case TypeTag.OscBlob:
+          SerializeBlob(atom.BlobValue, builder);
+          break;
+      }
+    }
+  }
+
+  internal static void SerializeInt32(int value, List<byte> builder)
+  {
+    var bytes = BitConverter.GetBytes(value);
+    if (BitConverter.IsLittleEndian) Array.Reverse(bytes);
+    builder.AddRange(bytes);
+  }
+
+  private static void SerializeFloat32(float value, List<byte> builder)
+  {
+    var bytes = BitConverter.GetBytes(value);
+    if (BitConverter.IsLittleEndian) Array.Reverse(bytes);
+    builder.AddRange(bytes);
+  }
+
+  private static void SerializeString(string? value, List<byte> builder)
+  {
+    var bytes = MessageParser.StringEncoding.GetBytes(value ?? string.Empty);
+    builder.AddRange(bytes);
+    var count = bytes.Length;
+    builder.Add(byte.MinValue);
+    count++;
+    while (count++ % 4 != 0) builder.Add(byte.MinValue);
+  }
+
+  private static void SerializeBlob(byte[]? value, List<byte> builder)
+  {
+    SerializeInt32(value?.Length ?? 0, builder);
+    builder.AddRange(value ?? []);
+    builder.Add(byte.MinValue);
+    var temp = (value?.Length ?? 0) + 1;
+    while (temp++ % 4 != 0) builder.Add(byte.MinValue);
   }
 
 
