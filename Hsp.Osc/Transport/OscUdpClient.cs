@@ -20,11 +20,11 @@ public sealed class OscUdpClient : IOscClient
 
 
   public OscUdpClient(IPAddress address, int port)
-    : this(port + 1, address, port)
+    : this(address, port, port)
   {
   }
 
-  public OscUdpClient(int localPort, IPAddress address, int port)
+  public OscUdpClient(IPAddress address, int port, int localPort)
   {
     Address = address;
     Port = port;
