@@ -12,5 +12,7 @@ public interface IOscServer : IDisposable
 
   void EndListen();
 
-  void RegisterHandler(Regex re, Func<MessageHandlerContext, Task> handler);
+  MessageHandler RegisterHandler(Regex re, Func<MessageHandlerContext, Task> handler);
+
+  void UnregisterHandler(MessageHandler handler);
 }

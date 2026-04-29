@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -12,7 +12,7 @@ namespace Hsp.Osc;
 public sealed class OscUdpServer : IOscServer
 {
   private static readonly MessageParser DefaultMessageParser = new();
-  private readonly ConcurrentBag<MessageHandler> _handlers = [];
+  private readonly List<MessageHandler> _handlers = [];
   private readonly UdpClient _client;
   private CancellationTokenSource? _token;
   private bool _islistening;
@@ -50,24 +50,31 @@ public sealed class OscUdpServer : IOscServer
     _islistening = false;
   }
 
-  public void RegisterHandler(string pattern, Func<MessageHandlerContext, Task> handler)
+  public MessageHandler RegisterHandler(string pattern, Func<MessageHandlerContext, Task> handler)
   {
-    RegisterHandler(new Regex(pattern), handler);
+    return RegisterHandler(new Regex(pattern), handler);
   }
 
-  public void RegisterHandler(string pattern, Action<MessageHandlerContext> handler)
+  public MessageHandler RegisterHandler(string pattern, Action<MessageHandlerContext> handler)
   {
-    RegisterHandler(pattern, async c => await Task.Run(() => handler(c)));
+    return RegisterHandler(pattern, async c => await Task.Run(() => handler(c)));
   }
 
-  public void RegisterHandler(Regex re, Func<MessageHandlerContext, Task> handler)
+  public MessageHandler RegisterHandler(Regex re, Func<MessageHandlerContext, Task> handler)
   {
-    _handlers.Add(new MessageHandler(re, handler));
+    var instance = new MessageHandler(re, handler);
+    _handlers.Add(instance);
+    return instance;
   }
 
-  public void RegisterHandler(Regex re, Action<MessageHandlerContext> handler)
+  public void UnregisterHandler(MessageHandler handler)
   {
-    RegisterHandler(re, async c => await Task.Run(() => handler(c)));
+    _handlers.Remove(handler);
+  }
+
+  public MessageHandler RegisterHandler(Regex re, Action<MessageHandlerContext> handler)
+  {
+    return RegisterHandler(re, async c => await Task.Run(() => handler(c)));
   }
 
   public void Dispose()
