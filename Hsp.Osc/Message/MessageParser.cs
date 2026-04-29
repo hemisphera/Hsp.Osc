@@ -125,11 +125,20 @@ public class MessageParser
             {
               case TypeTag.OscInt32:
               case TypeTag.OscFloat32:
+              case TypeTag.OscDouble:
+              case TypeTag.OscInt64:
+              case TypeTag.OscTimetag:
               case TypeTag.OscString:
+              case TypeTag.OscSymbol:
               case TypeTag.OscBlob:
+              case TypeTag.OscChar:
+              case TypeTag.OscRgbaColor:
               case TypeTag.OscTrue:
               case TypeTag.OscFalse:
               case TypeTag.OscNil:
+              case TypeTag.OscInfinitum:
+              case TypeTag.OscArrayBegin:
+              case TypeTag.OscArrayEnd:
                 typeTags.Add(new Atom(typeTag));
                 break;
 
@@ -173,10 +182,35 @@ public class MessageParser
           msg.PushAtom(floatVal);
           break;
 
+        case TypeTag.OscDouble:
+          var doubleVal = ParseDouble64(data, byteIndex);
+          msg.PushAtom(doubleVal);
+          incrementBy = 8;
+          break;
+
+        case TypeTag.OscInt64:
+          var int64Val = ParseInt64(data, byteIndex);
+          msg.PushAtom(int64Val);
+          incrementBy = 8;
+          break;
+
+        case TypeTag.OscTimetag:
+          var timetagVal = ParseUInt64(data, byteIndex);
+          msg.PushAtom(timetagVal);
+          incrementBy = 8;
+          break;
+
         case TypeTag.OscString:
           var stringVal = ParseString(data, byteIndex);
           msg.PushAtom(stringVal);
           incrementBy = (StringEncoding.GetByteCount(stringVal) + 4) / 4 * 4;
+          break;
+
+        case TypeTag.OscSymbol:
+          var symbolStr = ParseString(data, byteIndex);
+          var symbolAtom = new Atom(TypeTag.OscSymbol) { SymbolValue = symbolStr };
+          msg.Atoms.Add(symbolAtom);
+          incrementBy = (StringEncoding.GetByteCount(symbolStr) + 4) / 4 * 4;
           break;
 
         case TypeTag.OscBlob:
@@ -184,7 +218,22 @@ public class MessageParser
           msg.PushAtom(blobVal);
           break;
 
+        case TypeTag.OscChar:
+          var charRaw = ParseInt32(data, byteIndex);
+          msg.PushAtom((char)(charRaw & 0xFF));
+          break;
+
+        case TypeTag.OscRgbaColor:
+          var rgbaAtom = new Atom(TypeTag.OscRgbaColor) { RgbaValue = unchecked((uint)ParseInt32(data, byteIndex)) };
+          msg.Atoms.Add(rgbaAtom);
+          break;
+
+        case TypeTag.OscTrue:
+        case TypeTag.OscFalse:
         case TypeTag.OscNil:
+        case TypeTag.OscInfinitum:
+        case TypeTag.OscArrayBegin:
+        case TypeTag.OscArrayEnd:
           canIncrement = false;
           break;
       }
@@ -243,6 +292,84 @@ public class MessageParser
     }
 
     return BitConverter.ToSingle(data, startPos);
+  }
+
+  private double ParseDouble64(byte[] data, int startPos)
+  {
+    const int incrementBy = 8;
+    var tempPos = startPos;
+
+    if (startPos + incrementBy > data.Length) throw new MalformedMessageException("Missing binary data for double64 at byte index " + startPos + ".", data);
+
+    if (BitConverter.IsLittleEndian)
+    {
+      var littleEndianBytes = new byte[8];
+      littleEndianBytes[7] = data[tempPos++];
+      littleEndianBytes[6] = data[tempPos++];
+      littleEndianBytes[5] = data[tempPos++];
+      littleEndianBytes[4] = data[tempPos++];
+      littleEndianBytes[3] = data[tempPos++];
+      littleEndianBytes[2] = data[tempPos++];
+      littleEndianBytes[1] = data[tempPos++];
+      littleEndianBytes[0] = data[tempPos];
+
+      startPos = 0;
+      data = littleEndianBytes;
+    }
+
+    return BitConverter.ToDouble(data, startPos);
+  }
+
+  private static long ParseInt64(byte[] data, int startPos)
+  {
+    const int incrementBy = 8;
+    var tempPos = startPos;
+
+    if (startPos + incrementBy > data.Length) throw new MalformedMessageException("Missing binary data for int64 at byte index " + startPos + ".", data);
+
+    if (BitConverter.IsLittleEndian)
+    {
+      var littleEndianBytes = new byte[8];
+      littleEndianBytes[7] = data[tempPos++];
+      littleEndianBytes[6] = data[tempPos++];
+      littleEndianBytes[5] = data[tempPos++];
+      littleEndianBytes[4] = data[tempPos++];
+      littleEndianBytes[3] = data[tempPos++];
+      littleEndianBytes[2] = data[tempPos++];
+      littleEndianBytes[1] = data[tempPos++];
+      littleEndianBytes[0] = data[tempPos];
+
+      startPos = 0;
+      data = littleEndianBytes;
+    }
+
+    return BitConverter.ToInt64(data, startPos);
+  }
+
+  private static ulong ParseUInt64(byte[] data, int startPos)
+  {
+    const int incrementBy = 8;
+    var tempPos = startPos;
+
+    if (startPos + incrementBy > data.Length) throw new MalformedMessageException("Missing binary data for uint64 at byte index " + startPos + ".", data);
+
+    if (BitConverter.IsLittleEndian)
+    {
+      var littleEndianBytes = new byte[8];
+      littleEndianBytes[7] = data[tempPos++];
+      littleEndianBytes[6] = data[tempPos++];
+      littleEndianBytes[5] = data[tempPos++];
+      littleEndianBytes[4] = data[tempPos++];
+      littleEndianBytes[3] = data[tempPos++];
+      littleEndianBytes[2] = data[tempPos++];
+      littleEndianBytes[1] = data[tempPos++];
+      littleEndianBytes[0] = data[tempPos];
+
+      startPos = 0;
+      data = littleEndianBytes;
+    }
+
+    return BitConverter.ToUInt64(data, startPos);
   }
 
   private static string ParseString(byte[] data, int startPos)

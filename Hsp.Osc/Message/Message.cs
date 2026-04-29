@@ -80,7 +80,26 @@ public sealed class Message : IEnumerable<Atom>, IMessage
 
   public Message PushAtom(double value)
   {
-    return PushAtom((float)value);
+    Atoms.Add(new Atom(value));
+    return this;
+  }
+
+  public Message PushAtom(long value)
+  {
+    Atoms.Add(new Atom(value));
+    return this;
+  }
+
+  public Message PushAtom(ulong value)
+  {
+    Atoms.Add(new Atom(value));
+    return this;
+  }
+
+  public Message PushAtom(char value)
+  {
+    Atoms.Add(new Atom(value));
+    return this;
   }
 
   public Message PushAtom(float value)
@@ -141,12 +160,31 @@ public sealed class Message : IEnumerable<Atom>, IMessage
         case TypeTag.OscFloat32:
           SerializeFloat32(atom.Float32Value, builder);
           break;
+        case TypeTag.OscDouble:
+          SerializeDouble64(atom.Double64Value, builder);
+          break;
+        case TypeTag.OscInt64:
+          SerializeInt64(atom.Int64Value, builder);
+          break;
+        case TypeTag.OscTimetag:
+          SerializeUInt64(atom.TimetagValue, builder);
+          break;
         case TypeTag.OscString:
           SerializeString(atom.StringValue, builder);
+          break;
+        case TypeTag.OscSymbol:
+          SerializeString(atom.SymbolValue, builder);
+          break;
+        case TypeTag.OscChar:
+          SerializeInt32(atom.CharValue, builder);
+          break;
+        case TypeTag.OscRgbaColor:
+          SerializeInt32(unchecked((int)atom.RgbaValue), builder);
           break;
         case TypeTag.OscBlob:
           SerializeBlob(atom.BlobValue, builder);
           break;
+        // OscTrue, OscFalse, OscNil, OscInfinitum, OscArrayBegin, OscArrayEnd: no data bytes
       }
     }
   }
@@ -159,6 +197,27 @@ public sealed class Message : IEnumerable<Atom>, IMessage
   }
 
   private static void SerializeFloat32(float value, List<byte> builder)
+  {
+    var bytes = BitConverter.GetBytes(value);
+    if (BitConverter.IsLittleEndian) Array.Reverse(bytes);
+    builder.AddRange(bytes);
+  }
+
+  private static void SerializeDouble64(double value, List<byte> builder)
+  {
+    var bytes = BitConverter.GetBytes(value);
+    if (BitConverter.IsLittleEndian) Array.Reverse(bytes);
+    builder.AddRange(bytes);
+  }
+
+  private static void SerializeInt64(long value, List<byte> builder)
+  {
+    var bytes = BitConverter.GetBytes(value);
+    if (BitConverter.IsLittleEndian) Array.Reverse(bytes);
+    builder.AddRange(bytes);
+  }
+
+  private static void SerializeUInt64(ulong value, List<byte> builder)
   {
     var bytes = BitConverter.GetBytes(value);
     if (BitConverter.IsLittleEndian) Array.Reverse(bytes);

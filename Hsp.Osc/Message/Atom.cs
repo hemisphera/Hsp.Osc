@@ -62,6 +62,56 @@ public struct Atom
     }
   }
 
+  public long Int64Value
+  {
+    get => objvalue is long l ? l : 0L;
+    set
+    {
+      objvalue = value;
+      TypeTag = TypeTag.OscInt64;
+    }
+  }
+
+  public ulong TimetagValue
+  {
+    get => objvalue is ulong u ? u : 0UL;
+    set
+    {
+      objvalue = value;
+      TypeTag = TypeTag.OscTimetag;
+    }
+  }
+
+  public string? SymbolValue
+  {
+    get => objvalue as string;
+    set
+    {
+      objvalue = value;
+      TypeTag = TypeTag.OscSymbol;
+    }
+  }
+
+  public char CharValue
+  {
+    get => (char)int32value;
+    set
+    {
+      int32value = value;
+      TypeTag = TypeTag.OscChar;
+    }
+  }
+
+  public uint RgbaValue
+  {
+    get => unchecked((uint)int32value);
+    set
+    {
+      int32value = unchecked((int)value);
+      TypeTag = TypeTag.OscRgbaColor;
+    }
+  }
+
   public Atom(TypeTag type)
   {
     TypeTag = type;
@@ -80,13 +130,10 @@ public struct Atom
 
   public Atom(long value)
   {
-    unchecked
-    {
-      float32value = 0;
-      objvalue = null;
-      int32value = (int)value;
-      TypeTag = TypeTag.OscInt32;
-    }
+    int32value = 0;
+    float32value = 0;
+    objvalue = value;
+    TypeTag = TypeTag.OscInt64;
   }
 
   public Atom(float value)
@@ -99,13 +146,36 @@ public struct Atom
 
   public Atom(double value)
   {
-    unchecked
+    int32value = 0;
+    float32value = 0;
+    objvalue = value;
+    TypeTag = TypeTag.OscDouble;
+  }
+
+  public double Double64Value
+  {
+    get => objvalue is double d ? d : 0.0;
+    set
     {
-      int32value = 0;
-      objvalue = null;
-      float32value = (float)value;
-      TypeTag = TypeTag.OscFloat32;
+      objvalue = value;
+      TypeTag = TypeTag.OscDouble;
     }
+  }
+
+  public Atom(ulong value)
+  {
+    int32value = 0;
+    float32value = 0;
+    objvalue = value;
+    TypeTag = TypeTag.OscTimetag;
+  }
+
+  public Atom(char value)
+  {
+    float32value = 0;
+    objvalue = null;
+    int32value = value;
+    TypeTag = TypeTag.OscChar;
   }
 
   public Atom(string value)
@@ -134,16 +204,34 @@ public struct Atom
         return Int32Value.ToString();
       case TypeTag.OscFloat32:
         return Float32Value.ToString(CultureInfo.InvariantCulture);
+      case TypeTag.OscDouble:
+        return Double64Value.ToString(CultureInfo.InvariantCulture);
+      case TypeTag.OscInt64:
+        return Int64Value.ToString();
+      case TypeTag.OscTimetag:
+        return TimetagValue.ToString();
       case TypeTag.OscString:
         return StringValue ?? "<nil>";
+      case TypeTag.OscSymbol:
+        return SymbolValue ?? "<nil>";
       case TypeTag.OscBlob:
         return BlobValue != null ? BitConverter.ToString(BlobValue) : "<nil>";
+      case TypeTag.OscChar:
+        return CharValue.ToString();
+      case TypeTag.OscRgbaColor:
+        return $"#{RgbaValue:X8}";
       case TypeTag.OscTrue:
         return "true";
       case TypeTag.OscFalse:
         return "false";
       case TypeTag.OscNil:
         return "<nil>";
+      case TypeTag.OscInfinitum:
+        return "\u221e";
+      case TypeTag.OscArrayBegin:
+        return "[";
+      case TypeTag.OscArrayEnd:
+        return "]";
       default:
         return "unknown";
     }
@@ -208,6 +296,32 @@ public struct Atom
   {
     if (atom.TypeTag != TypeTag.OscFloat32) throw new InvalidCastException();
     return atom.float32value;
+  }
+
+  // Double64 cast
+  public static explicit operator double(Atom atom)
+  {
+    if (atom.TypeTag != TypeTag.OscDouble) throw new InvalidCastException();
+    return atom.Double64Value;
+  }
+
+  // Int64 cast
+  public static explicit operator long(Atom atom)
+  {
+    if (atom.TypeTag != TypeTag.OscInt64) throw new InvalidCastException();
+    return atom.Int64Value;
+  }
+
+  // Char cast
+  public static implicit operator Atom(char value)
+  {
+    return new Atom(value);
+  }
+
+  public static explicit operator char(Atom atom)
+  {
+    if (atom.TypeTag != TypeTag.OscChar) throw new InvalidCastException();
+    return atom.CharValue;
   }
 
   // String cast
